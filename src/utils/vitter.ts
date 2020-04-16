@@ -1,198 +1,332 @@
 enum nodeTypes {
-    NYT,
-    LEAF,
-    INTERNAL
+  NYT,
+  LEAF,
+  INTERNAL,
+}
+
+enum slideType {
+  FRONT,
+  BACK,
 }
 
 type nodeType = Node | null;
 
 class Node {
-    public rightChild: nodeType;
-    public leftChild: nodeType;
-    public parent: nodeType;
-    public type: nodeTypes;
-    public weight: number;
-    public value: number;
-    public letter: string | null = null;
-    public code = '';
+  public rightChild: nodeType;
+  public leftChild: nodeType;
+  public parent: nodeType;
+  public type: nodeTypes;
+  public weight: number;
+  public value: number;
+  public letter: string | null = null;
+  public code = '';
 
-    constructor(rightChild: nodeType, leftChild: nodeType, type: nodeTypes, weight: number, value: number, parent: nodeType, letter?: string) {
-        this.rightChild = rightChild;
-        this.leftChild = leftChild;
-        this.type = type;
-        this.weight = weight;
-        this.value = value;
-        this.parent = parent;
-        if (letter) {
-            this.letter = letter;
-        }
+  public setCodes(code: string): void {
+    this.code = `${code}`;
+    const rightCode = `${code}1`;
+    const leftCode = `${code}0`;
+    if(this.rightChild) {
+        this.rightChild.setCodes(rightCode);
     }
+    if (this.leftChild) {
+        this.leftChild.setCodes(leftCode);
+    }
+  }
+
+  constructor(
+    rightChild: nodeType,
+    leftChild: nodeType,
+    type: nodeTypes,
+    weight: number,
+    value: number,
+    parent: nodeType,
+    letter?: string
+  ) {
+    this.rightChild = rightChild;
+    this.leftChild = leftChild;
+    this.type = type;
+    this.weight = weight;
+    this.value = value;
+    this.parent = parent;
+    if (letter) {
+      this.letter = letter;
+    }
+  }
 }
 
-class VitterTree {
-    public nodes: Node[];
+class VitterTree extends Node{
+  public nodes: Node[];
 
-    public root: Node = new Node(null, null, nodeTypes.NYT, 256, 0, null);
+  public root: Node = new Node(null, null, nodeTypes.NYT, 256, 0, null);
 
-    public inputArray: string[];
+  public inputArray: string[];
 
-    public code = '';
+  public code = '';
 
-    private block: Node[] = [];
+  private block: Node[] = [];
 
-    private newNode: Node = new Node(null, null, nodeTypes.NYT, 256, 0, null);
+  private newNode: Node = new Node(null, null, nodeTypes.NYT, 256, 0, null);
 
-    constructor(input: string) {
-        this.nodes = [this.root];
-        this.inputArray = input.split('');
+  private newNodeWeight = 255;
+  private parentBeforeSlideWeight = 256;
+
+  constructor(input: string) {
+    super(null, null, nodeTypes.NYT, 256, 0, null);
+    this.nodes = [this.root];
+    this.inputArray = input.split('');
+  }
+
+  private isLetterInTree(letter: string): Node | undefined {
+    return this.nodes.find(node => {
+      return node.letter === letter;
+    });
+  }
+
+  private findNYT(): Node | undefined {
+    return this.nodes.find(node => {
+      return node.type === nodeTypes.NYT;
+    });
+  }
+
+  addLetter(letter: string): void {
+      this.sortNodesArray();
+    const node = this.isLetterInTree(letter);
+    if (node) {
+      this.code += `${node.code} `;
+      this.newNode = node;
+      this.addNode();
+    } else {
+      const NYT = this.findNYT();
+      if (NYT) {
+        this.code += `${NYT.code}0${letter.charCodeAt(0).toString(2)} `;
+        const newNode = new Node(
+          null,
+          null,
+          nodeTypes.LEAF,
+          NYT.weight - 1,
+          1,
+          NYT,
+          letter
+        );
+        const newNYT = new Node(
+          null,
+          null,
+          nodeTypes.NYT,
+          NYT.weight - 2,
+          0,
+          NYT
+        );
+        this.nodes.unshift(newNode);
+        this.nodes.unshift(newNYT);
+        NYT.rightChild = newNode;
+        NYT.leftChild = newNYT;
+        NYT.type = nodeTypes.INTERNAL;
+        NYT.value++;
+        this.newNode = NYT;
+        this.addNode();
+      }
     }
+  }
 
-    private isLetterInTree(letter: string): Node | undefined {
-        return this.nodes.find((node) => {
-            return node.letter === letter;
-        });
+  private setBlock(): void {
+    if (
+      this.newNode.leftChild &&
+      this.newNode.leftChild.type === nodeTypes.NYT
+    ) {
+      this.block = this.nodes.filter(
+        node => node.value === this.newNode.value && node !== this.root
+      );
+    } else {
+      const wgt = this.newNode.weight;
+      this.block = this.nodes.filter(
+        node =>
+          (node.value === this.newNode.value &&
+          node !== this.root &&
+          node.weight !== wgt)
+      );
     }
+  }
 
-    private findNYT(): Node | undefined {
-        return this.nodes.find((node) => {
-            return node.type === nodeTypes.NYT;
-        })
+  private sortBlock(): void {
+    this.block.sort((a, b) => {
+      return a.type - b.type;
+    });
+}
+
+  private slideNode(type: slideType): void {
+    if (type === slideType.FRONT) {
+      this.block.unshift(this.newNode);
+    } else {
+      this.block.push(this.newNode);
     }
+  }
 
-    addLetter(letter: string): void {
-        const node = this.isLetterInTree(letter);
-        if(node) {
-            this.code += `${node.code} `;
-            this.newNode = node;
-            this.root.value++;
-            this.sortBlock();
-        } else {
-            const NYT = this.findNYT();
-            if (NYT) {
-                this.code += `${NYT.code}0${letter.charCodeAt(0).toString(2)} `
-                const newNode = new Node(null, null, nodeTypes.LEAF, NYT.weight - 1, 1, NYT, letter);
-                const newNYT = new Node(null, null, nodeTypes.NYT, NYT.weight - 2, 0, NYT);
-                this.nodes.push(newNode);
-                this.nodes.push(newNYT);
-                NYT.rightChild = newNode;
-                NYT.leftChild = newNYT;
-                NYT.type = nodeTypes.INTERNAL;
-                NYT.value++;
-                this.newNode = NYT;
-                this.sortBlock();
-            }
+  private getWeightsRangeFromBlock(block: Node[]): number[] {
+    const sort = [
+      ...block.sort((a, b) => {
+        return a.weight - b.weight;
+      }),
+    ];
+    return sort.map(node => node.weight);
+  }
+
+  private setBlockWeights(): void {
+    const block = [...this.block];
+    const newNode = block.find(node => node.weight === this.newNode.weight);
+    const range = this.getWeightsRangeFromBlock(this.block);
+    const kurwa = block.map((node, index) => {
+      if (node.weight === newNode?.weight) {
+        if (newNode.parent) {
+          this.parentBeforeSlideWeight = newNode.parent.weight;
         }
+        this.newNodeWeight = range[index];
+      }
+      return { ...node, weight: range[index], setCodes: node.setCodes };
+    });
+    this.block = kurwa;
+  }
 
+  private checkBlockType(type: nodeTypes): boolean {
+    return [...this.block].reduce((prev: boolean, curr: Node) => {
+      if (curr.weight < this.newNode.weight && type === nodeTypes.INTERNAL) {
+        return false;
+      }
+      return prev && curr.type === type;
+    }, true);
+  }
+
+  private incrementCascade(): void {
+    let node: Node | null = this.newNode;
+    if (this.newNode.type === nodeTypes.INTERNAL) {
+      node = this.newNode.parent;
     }
-
-    private setBlock(): void {
-        if (this.newNode.leftChild && this.newNode.leftChild.type === nodeTypes.NYT) {
-            this.block = this.nodes.filter((node) => (node.value === this.newNode.value && node !== this.newNode.rightChild));
-        } else {
-            this.block = this.nodes.filter((node) => (node.value === this.newNode.value && node !== this.newNode));
-        }
+    while (node) {
+      node.value++;
+      node = node.parent;
     }
+    node = null;
+  }
 
-    private sortBlock(): void {
+  private addNode(): void {
+    this.setBlock();
+    this.sortBlock();
+    if (this.newNode.type === nodeTypes.LEAF) {
+      if (this.checkBlockType(nodeTypes.INTERNAL)) {
+        this.incrementCascade();
         this.setBlock();
-        if (this.block.length) {
-            this.block.sort((a, b) => {
-                if (a.type === nodeTypes.INTERNAL || b.type === nodeTypes.INTERNAL) {
-                    return a.type === nodeTypes.INTERNAL ? 1 : -1;
-                }
-                return a.weight - b.weight;
-            });
-            if (this.newNode.leftChild && this.newNode.leftChild.type === nodeTypes.NYT) {
+        this.sortBlock();
+        this.setBlockWeights();
+        this.updateTree(false);
+      } else {
+          this.slideNode(slideType.BACK);
+        this.setBlockWeights();
+        this.updateTree(false);
+        const newNodeIndex = this.nodes.findIndex(
+            node => node.weight === this.newNodeWeight
+          );
+          this.newNode = this.nodes[newNodeIndex];
+        this.incrementCascade();
+      }
+    } else {
+      if (this.checkBlockType(nodeTypes.LEAF)) {
+        this.incrementCascade();
+        this.setBlock();
+        this.sortBlock();
+        this.setBlockWeights();
+        this.updateTree(false);
+      } else {
+          this.setBlockWeights();
+        this.updateTree(false);
+        const parentIndex = this.nodes.findIndex(
+          node => node.weight === this.parentBeforeSlideWeight
+        );
+        this.nodes[parentIndex].value++;
+        this.newNode = this.nodes[parentIndex];
+        this.incrementCascade();
+      }
+    }
+    this.sortNodesArray();
+    
+  }
 
-               
-                this.block.forEach((blockNode, index) => {
-                    blockNode.weight = (this.newNode.leftChild as Node).weight + index + 2;
-                    console.log(blockNode.weight);
-                });
-                if (this.newNode !== this.root) {
-                    this.root.value++;
-                }
-            } else {
-                this.newNode.weight = this.block[this.block.length - 1].weight;
-                this.block.forEach((blockNode, index) => {
-                    blockNode.weight = this.newNode.weight - this.block.length + index;
-                });
-                this.newNode.value++;
-            }
+  private sortNodesArray(): void {
+    const nodes = [...this.nodes];
+    this.nodes = nodes.sort((a, b) => {
+        if((a.type === nodeTypes.INTERNAL || b.type === nodeTypes.INTERNAL) && a.value === b.value) {
+            return a.type - b.type;
         } else {
-            this.newNode.value++;
+            return a.value - b.value;
         }
-        let prevParent = this.newNode.parent;
-        this.updateTree();
-        let parent = this.newNode.parent;
-        while (parent) {
-            parent.value = parent.rightChild ? parent.rightChild.value : 0;
-            parent.value += parent.leftChild ? parent.leftChild.value : 0;
-            parent = parent.parent;
-        }
+    })
+    .map((node, index) => {
+        return { ...node, weight: 256 - nodes.length + 1 + index, setCodes: node.setCodes}
+    });
+    this.nodes[nodes.length - 1].setCodes('');
+    this.updateTree(true);
+  }
 
-        while (prevParent) {
-            prevParent.value = prevParent.rightChild ? prevParent.rightChild.value : 0;
-            prevParent.value += prevParent.leftChild ? prevParent.leftChild.value : 0;
-            prevParent = prevParent.parent;
+  private updateTree(omitBlockInsert: boolean): void {
+    if (!omitBlockInsert) {
+      const test = [...this.nodes]
+      .map((node, index) => {
+        if (this.getWeightsRangeFromBlock(this.block).includes(node.weight)) {
+          return index;
         }
-        
-        
+        return 0;
+      })
+      .sort((a, b) => {
+        return a - b;
+      });
+    const zeroIndex = test.lastIndexOf(0);
+    test.splice(0, zeroIndex + 1);
+    this.nodes.splice(test[0], test.length, ...this.block);
     }
-
-    private updateTree(): void {
-        this.nodes.sort((a, b) => {
-            return a.weight - b.weight;
-        });
-        const nodesToAssign = [...this.nodes];
-        nodesToAssign.pop();
-        while (nodesToAssign.length) {
-            for(let i = this.nodes.length - 1; i >= 0; i--) {
-                if(this.nodes[i].type === nodeTypes.INTERNAL) {
-                    const rightChild = nodesToAssign.pop();
-                    if (rightChild) {
-                        this.nodes[i].rightChild = rightChild;
-                        rightChild.parent = this.nodes[i];
-                        rightChild.code = `${rightChild.parent.code}${1}`
-                    }
-                    const leftChild = nodesToAssign.pop();
-                    if (leftChild) {
-                        this.nodes[i].leftChild = leftChild;
-                        leftChild.parent = this.nodes[i];
-                        leftChild.code = `${leftChild.parent.code}${0}`
-                    }
-                }
-            }
-
+    this.nodes.sort((a, b) => {
+      return a.weight - b.weight;
+    });
+    const nodesToAssign = [...this.nodes];
+    nodesToAssign.pop();
+    while (nodesToAssign.length) {
+      for (let i = this.nodes.length - 1; i >= 0; i--) {
+        if (this.nodes[i].type === nodeTypes.INTERNAL) {
+          const rightChild = nodesToAssign.pop();
+          if (rightChild) {
+            this.nodes[i].rightChild = rightChild;
+            rightChild.parent = this.nodes[i];
+            rightChild.code = `${rightChild.parent.code}${1}`;
+          }
+          const leftChild = nodesToAssign.pop();
+          if (leftChild) {
+            this.nodes[i].leftChild = leftChild;
+            leftChild.parent = this.nodes[i];
+            leftChild.code = `${leftChild.parent.code}${0}`;
+          }
         }
+      }
     }
+  }
 
-    private appendCode(node: Node, value: number): void {
-        if (node.parent && node.parent.code) {
-            node.code = node.parent.code + value.toString();
-        }
-        node.code = value.toString();
+  private appendCode(node: Node, value: number): void {
+    if (node.parent && node.parent.code) {
+      node.code = node.parent.code + value.toString();
     }
+    node.code = value.toString();
+  }
 
-    encode(): void {
-        this.inputArray.forEach((letter) => {
-            this.addLetter(letter);
-        })
-    }
+  encode(): void {
+    this.inputArray.forEach(letter => {
+      this.addLetter(letter);
+    });
+  }
 }
-
-
 
 function vitterEncode(input: string): void {
-    const tree = new VitterTree(input);
+  const tree = new VitterTree(input);
 
-    tree.encode();
+  tree.encode();
 
-    console.log(tree.nodes);
-    console.log(tree.code);
-
-    //console.log(tree.root);
-    //console.log(tree.code);
+  console.log(tree.nodes);
+  console.log(tree.code);
 }
 
 export default vitterEncode;
