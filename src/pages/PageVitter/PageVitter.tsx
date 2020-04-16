@@ -18,6 +18,8 @@ const PageVitter: React.FunctionComponent<PropsType> = () => {
 
   const [code, setCode] = useState<string>();
 
+  const [goDiagram, setGoDiagram] = useState<go.Diagram>();
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onInputChange = (event: any): void => {
     setInput(event.target.value);
@@ -77,6 +79,8 @@ const PageVitter: React.FunctionComponent<PropsType> = () => {
       { routing: go.Link.Orthogonal, corner: 5 },
       $(go.Shape, { strokeWidth: 3, stroke: '#555' })
     );
+
+    setGoDiagram(diagram);
 
     return diagram;
   };
@@ -139,6 +143,37 @@ const PageVitter: React.FunctionComponent<PropsType> = () => {
       }
   }
 
+  const downloadCallback = (img: string | HTMLImageElement | ImageData | null) => {
+    const url = window.URL.createObjectURL(img);
+    const filename = "diagram.png";
+
+    const a = document.createElement("a");
+    a.setAttribute('class', classes.hideDisplay);
+    a.href = url;
+    a.download = filename;
+
+    // IE 11
+    if (window.navigator.msSaveBlob !== undefined) {
+      window.navigator.msSaveBlob(img, filename);
+      return;
+    }
+
+    document.body.appendChild(a);
+    requestAnimationFrame(function() {
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    });
+  }
+
+  const downloadOnClick = () => {
+      if (goDiagram) {
+        goDiagram.makeImageData({ background: 'white', returnType: 'blob', callback: downloadCallback})
+      }
+  }
+
+  
+
   const renderDiagram = () => {
     const dataArray = prepDataArray();
     const linkArray = prepLinkDataArray();
@@ -166,7 +201,12 @@ const PageVitter: React.FunctionComponent<PropsType> = () => {
         onKeyPress={onKeyPress}
       />
       <TextField className={classes.textField} disabled value={code} multiline/>
+      <div style={{ display: 'flex', flexDirection: 'row'}}>
+      
+      <Button onClick={downloadOnClick}>Download</Button>
       <Button onClick={onClick}>Encode</Button>
+      </div>
+      
       {renderDiagram()}
     </div>
   );

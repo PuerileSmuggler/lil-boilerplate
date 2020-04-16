@@ -19,6 +19,9 @@ const useStyles = makeStyles({
     border: 'solid 1px black',
     backgroundColor: 'white',
   },
+  hideDisplay: {
+      display: 'none'
+  }
 });
 
 export default useStyles;
