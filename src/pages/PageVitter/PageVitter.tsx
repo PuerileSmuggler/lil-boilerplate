@@ -129,6 +129,16 @@ const PageVitter: React.FunctionComponent<PropsType> = () => {
     }
   };
 
+  const onKeyPress = (event: React.KeyboardEvent): void => {
+      if (event.key === 'Enter') {
+        if (input) {
+            const vitter = vitterEncode(input);
+            setTree(vitter);
+            setCode(vitter.code);
+          }
+      }
+  }
+
   const renderDiagram = () => {
     const dataArray = prepDataArray();
     const linkArray = prepLinkDataArray();
@@ -153,6 +163,7 @@ const PageVitter: React.FunctionComponent<PropsType> = () => {
         variant="outlined"
         label="Word to encode"
         onChange={onInputChange}
+        onKeyPress={onKeyPress}
       />
       <TextField className={classes.textField} disabled value={code} multiline/>
       <Button onClick={onClick}>Encode</Button>
