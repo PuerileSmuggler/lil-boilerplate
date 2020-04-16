@@ -11,7 +11,7 @@ enum slideType {
 
 type nodeType = Node | null;
 
-class Node {
+export class Node {
   public rightChild: nodeType;
   public leftChild: nodeType;
   public parent: nodeType;
@@ -317,16 +317,15 @@ class VitterTree extends Node{
     this.inputArray.forEach(letter => {
       this.addLetter(letter);
     });
+    this.nodes[this.nodes.length - 1].value--; // Nie wiem o chuj chodzi ale root ma zawsze +1 wartości
   }
 }
 
-function vitterEncode(input: string): void {
+function vitterEncode(input: string): {tree: Node[]; code: string} {
   const tree = new VitterTree(input);
 
   tree.encode();
-
-  console.log(tree.nodes);
-  console.log(tree.code);
+  return { tree: tree.nodes, code: tree.code }
 }
 
 export default vitterEncode;
