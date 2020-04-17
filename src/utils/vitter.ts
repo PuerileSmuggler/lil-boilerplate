@@ -70,7 +70,7 @@ class VitterTree extends Node{
   private newNodeWeight = 255;
   private parentBeforeSlideWeight = 256;
 
-  public mean = 0;
+  public mean: { [key: string]: { value: number; occurances: number} } = {};
 
   constructor(input: string) {
     super(null, null, nodeTypes.NYT, 256, 0, null);
@@ -95,12 +95,14 @@ class VitterTree extends Node{
     const node = this.isLetterInTree(letter);
     if (node) {
       this.code += `${node.code} `;
+      this.setMean(node.value + 1, node.code, letter);
       this.newNode = node;
       this.addNode();
     } else {
       const NYT = this.findNYT();
       if (NYT) {
         this.code += `${NYT.code}0${letter.charCodeAt(0).toString(2)} `;
+        this.setMean(1, `${NYT.code}0${letter.charCodeAt(0).toString(2)}`, letter)
         const newNode = new Node(
           null,
           null,
@@ -195,6 +197,15 @@ class VitterTree extends Node{
       }
       return prev && curr.type === type;
     }, true);
+  }
+
+  private setMean(nodeValue: number, code: string, letter: string): void {
+    const rootValue = this.nodes[this.nodes.length - 1].value ? this.nodes[this.nodes.length - 1].value : 1;
+    if (this.mean[letter]) {
+      this.mean[letter] = { value: (this.mean[letter].value + (nodeValue * code.length)), occurances: this.mean[letter].occurances + 1 };
+    } else {
+      this.mean[letter] = { value: (nodeValue * code.length), occurances: 1};
+    }
   }
 
   private incrementCascade(): void {
@@ -316,13 +327,12 @@ class VitterTree extends Node{
   }
 }
 
-function vitterEncode(input: string): {tree: Node[]; code: string} {
+function vitterEncode(input: string): {tree: Node[]; code: string; valueMap: { [key: string]: { value: number; occurances: number } }} {
   const tree = new VitterTree(input);
 
   tree.encode();
   
-  console.log();
-  return { tree: tree.nodes, code: tree.code }
+  return { tree: tree.nodes, code: tree.code, valueMap: tree.mean }
 }
 
 export default vitterEncode;

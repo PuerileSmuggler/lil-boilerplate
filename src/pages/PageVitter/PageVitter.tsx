@@ -24,6 +24,8 @@ const PageVitter: React.FunctionComponent<PropsType> = () => {
 
   const [entropy, setEntropy] = useState<number>(0);
 
+  const [trueMean, setTrueMean] = useState<number>(0);
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onInputChange = (event: any): void => {
     setInput(event.target.value);
@@ -104,6 +106,17 @@ const PageVitter: React.FunctionComponent<PropsType> = () => {
     setEntropy(entrophy);
   };
 
+  const setTrueMeanState = (
+    valueMap: { [key: string]: { value: number; occurances: number } },
+    rootValue: number
+  ) => {
+    const test = Object.keys(valueMap).reduce(
+      (prev, curr) => valueMap[curr].value / valueMap[curr].occurances + prev,
+      0
+    );
+    setTrueMean(test / rootValue);
+  };
+
   const prepDataArray = () => {
     if (tree) {
       return tree.tree.map(node => {
@@ -155,10 +168,12 @@ const PageVitter: React.FunctionComponent<PropsType> = () => {
   const onClick = (): void => {
     if (input) {
       const vitter = vitterEncode(input);
+      const rootValue = vitter.tree[vitter.tree.length - 1].value;
       setTree(vitter);
       setCode(vitter.code);
       setCodeWord(vitter.code);
       setMeanState(vitter.tree);
+      setTrueMeanState(vitter.valueMap, rootValue);
     }
   };
 
@@ -166,10 +181,12 @@ const PageVitter: React.FunctionComponent<PropsType> = () => {
     if (event.key === 'Enter') {
       if (input) {
         const vitter = vitterEncode(input);
+        const rootValue = vitter.tree[vitter.tree.length - 1].value;
         setTree(vitter);
         setCode(vitter.code);
         setCodeWord(vitter.code);
         setMeanState(vitter.tree);
+        setTrueMeanState(vitter.valueMap, rootValue);
       }
     }
   };
@@ -246,6 +263,12 @@ const PageVitter: React.FunctionComponent<PropsType> = () => {
           disabled
           value={mean}
           placeholder={'Mean'}
+        />
+        <TextField
+          className={classes.textField}
+          disabled
+          value={trueMean}
+          placeholder={'True mean'}
         />
         <TextField
           className={classes.textField}
