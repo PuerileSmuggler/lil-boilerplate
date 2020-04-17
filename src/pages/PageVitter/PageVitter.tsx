@@ -95,7 +95,9 @@ const PageVitter: React.FunctionComponent<PropsType> = () => {
     nodes.forEach(node => {
       if (node.type === 1) {
         mean += node.value * node.code.length;
-        entrophy -= (node.value / nodes[nodes.length - 1].value) * (Math.log2(( node.value / nodes[nodes.length - 1].value )));
+        entrophy -=
+          (node.value / nodes[nodes.length - 1].value) *
+          Math.log2(node.value / nodes[nodes.length - 1].value);
       }
     });
     setMean(mean / nodes[nodes.length - 1].value);
@@ -172,11 +174,9 @@ const PageVitter: React.FunctionComponent<PropsType> = () => {
     }
   };
 
-  const downloadCallback = (
-    img: string | HTMLImageElement | ImageData | null
-  ) => {
+  const downloadCallback = (img: Blob) => {
     const url = window.URL.createObjectURL(img);
-    const filename = 'diagram.png';
+    const filename = 'diagram.svg';
 
     const a = document.createElement('a');
     a.setAttribute('class', classes.hideDisplay);
@@ -199,11 +199,10 @@ const PageVitter: React.FunctionComponent<PropsType> = () => {
 
   const downloadOnClick = () => {
     if (goDiagram) {
-      goDiagram.makeImageData({
-        background: 'white',
-        returnType: 'blob',
-        callback: downloadCallback,
-      });
+      const svg = goDiagram.makeSvg({ scale: 1, background: 'white' });
+      const svgstr = new XMLSerializer().serializeToString(svg);
+      const blob = new Blob([svgstr], { type: 'image/svg+xml' });
+      downloadCallback(blob);
     }
   };
 
@@ -226,27 +225,39 @@ const PageVitter: React.FunctionComponent<PropsType> = () => {
   };
   return (
     <div className={classes.root}>
-      <TextField
-        className={classes.textField}
-        variant="outlined"
-        label="Word to encode"
-        onChange={onInputChange}
-        onKeyPress={onKeyPress}
-      />
-      <TextField
-        className={classes.textField}
-        disabled
-        value={code}
-        multiline
-        placeholder={'Code'}
-      />
-      <TextField className={classes.textField} disabled value={mean} placeholder={'Mean'}/>
-      <TextField className={classes.textField} disabled value={entropy} placeholder={'Entropy'} />
-      <div style={{ display: 'flex', flexDirection: 'row' }}>
-        <Button onClick={downloadOnClick}>Download</Button>
-        <Button onClick={onClick}>Encode</Button>
+      <div className={classes.controls}>
+        <TextField
+          className={classes.textField}
+          variant="outlined"
+          label="Word to encode"
+          onChange={onInputChange}
+          onKeyPress={onKeyPress}
+          multiline
+        />
+        <TextField
+          className={classes.textField}
+          disabled
+          value={code}
+          multiline
+          placeholder={'Code'}
+        />
+        <TextField
+          className={classes.textField}
+          disabled
+          value={mean}
+          placeholder={'Mean'}
+        />
+        <TextField
+          className={classes.textField}
+          disabled
+          value={entropy}
+          placeholder={'Entropy'}
+        />
+        <div style={{ display: 'flex', flexDirection: 'row' }}>
+          <Button onClick={downloadOnClick}>Download</Button>
+          <Button onClick={onClick}>Encode</Button>
+        </div>
       </div>
-
       {renderDiagram()}
     </div>
   );
