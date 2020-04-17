@@ -70,6 +70,8 @@ class VitterTree extends Node{
   private newNodeWeight = 255;
   private parentBeforeSlideWeight = 256;
 
+  public mean = 0;
+
   constructor(input: string) {
     super(null, null, nodeTypes.NYT, 256, 0, null);
     this.nodes = [this.root];
@@ -306,13 +308,6 @@ class VitterTree extends Node{
     }
   }
 
-  private appendCode(node: Node, value: number): void {
-    if (node.parent && node.parent.code) {
-      node.code = node.parent.code + value.toString();
-    }
-    node.code = value.toString();
-  }
-
   encode(): void {
     this.inputArray.forEach(letter => {
       this.addLetter(letter);
@@ -325,6 +320,8 @@ function vitterEncode(input: string): {tree: Node[]; code: string} {
   const tree = new VitterTree(input);
 
   tree.encode();
+  
+  console.log();
   return { tree: tree.nodes, code: tree.code }
 }
 

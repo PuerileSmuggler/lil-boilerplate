@@ -20,6 +20,10 @@ const PageVitter: React.FunctionComponent<PropsType> = () => {
 
   const [goDiagram, setGoDiagram] = useState<go.Diagram>();
 
+  const [mean, setMean] = useState<number>(0);
+
+  const [entropy, setEntropy] = useState<number>(0);
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onInputChange = (event: any): void => {
     setInput(event.target.value);
@@ -85,6 +89,19 @@ const PageVitter: React.FunctionComponent<PropsType> = () => {
     return diagram;
   };
 
+  const setMeanState = (nodes: Node[]) => {
+    let mean = 0;
+    let entrophy = 0;
+    nodes.forEach(node => {
+      if (node.type === 1) {
+        mean += node.value * node.code.length;
+        entrophy -= (node.value / nodes[nodes.length - 1].value) * (Math.log2(( node.value / nodes[nodes.length - 1].value )));
+      }
+    });
+    setMean(mean / nodes[nodes.length - 1].value);
+    setEntropy(entrophy);
+  };
+
   const prepDataArray = () => {
     if (tree) {
       return tree.tree.map(node => {
@@ -125,29 +142,43 @@ const PageVitter: React.FunctionComponent<PropsType> = () => {
     return null;
   };
 
+  const setCodeWord = (input: string) => {
+    const codeLetter: string[] = [];
+    const joinCode = input.split(' ').join('');
+    for (let i = 0; i <= joinCode.length / 8; i++) {
+      codeLetter.push(joinCode.substring(i * 8, i * 8 + 8));
+    }
+  };
+
   const onClick = (): void => {
     if (input) {
       const vitter = vitterEncode(input);
       setTree(vitter);
       setCode(vitter.code);
+      setCodeWord(vitter.code);
+      setMeanState(vitter.tree);
     }
   };
 
   const onKeyPress = (event: React.KeyboardEvent): void => {
-      if (event.key === 'Enter') {
-        if (input) {
-            const vitter = vitterEncode(input);
-            setTree(vitter);
-            setCode(vitter.code);
-          }
+    if (event.key === 'Enter') {
+      if (input) {
+        const vitter = vitterEncode(input);
+        setTree(vitter);
+        setCode(vitter.code);
+        setCodeWord(vitter.code);
+        setMeanState(vitter.tree);
       }
-  }
+    }
+  };
 
-  const downloadCallback = (img: string | HTMLImageElement | ImageData | null) => {
+  const downloadCallback = (
+    img: string | HTMLImageElement | ImageData | null
+  ) => {
     const url = window.URL.createObjectURL(img);
-    const filename = "diagram.png";
+    const filename = 'diagram.png';
 
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.setAttribute('class', classes.hideDisplay);
     a.href = url;
     a.download = filename;
@@ -164,15 +195,17 @@ const PageVitter: React.FunctionComponent<PropsType> = () => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     });
-  }
+  };
 
   const downloadOnClick = () => {
-      if (goDiagram) {
-        goDiagram.makeImageData({ background: 'white', returnType: 'blob', callback: downloadCallback})
-      }
-  }
-
-  
+    if (goDiagram) {
+      goDiagram.makeImageData({
+        background: 'white',
+        returnType: 'blob',
+        callback: downloadCallback,
+      });
+    }
+  };
 
   const renderDiagram = () => {
     const dataArray = prepDataArray();
@@ -200,13 +233,20 @@ const PageVitter: React.FunctionComponent<PropsType> = () => {
         onChange={onInputChange}
         onKeyPress={onKeyPress}
       />
-      <TextField className={classes.textField} disabled value={code} multiline/>
-      <div style={{ display: 'flex', flexDirection: 'row'}}>
-      
-      <Button onClick={downloadOnClick}>Download</Button>
-      <Button onClick={onClick}>Encode</Button>
+      <TextField
+        className={classes.textField}
+        disabled
+        value={code}
+        multiline
+        placeholder={'Code'}
+      />
+      <TextField className={classes.textField} disabled value={mean} placeholder={'Mean'}/>
+      <TextField className={classes.textField} disabled value={entropy} placeholder={'Entropy'} />
+      <div style={{ display: 'flex', flexDirection: 'row' }}>
+        <Button onClick={downloadOnClick}>Download</Button>
+        <Button onClick={onClick}>Encode</Button>
       </div>
-      
+
       {renderDiagram()}
     </div>
   );
