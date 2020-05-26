@@ -51,7 +51,7 @@ class Hamming {
         this.byteCodeReverse = byteCodeReverseArray.join('');
 
         if(checkParity) {
-            
+            console.log(this.byteCode);
             console.log(this.parityBytesArray.join(''));
             console.log(parseInt(this.parityBytesArray.reverse().join(''), 2));
         }

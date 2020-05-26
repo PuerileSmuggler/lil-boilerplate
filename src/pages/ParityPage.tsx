@@ -3,6 +3,7 @@ import { makeStyles } from '@material-ui/styles';
 import { TextField, Button } from '@material-ui/core';
 import { chunkBytes } from '../utils/utils';
 import Hamming from '../utils/hamming';
+import CRC, {CrcTypesEnum} from '../utils/CRC';
 
 
 const useStyles = makeStyles({
@@ -20,11 +21,13 @@ const [input, setInput] = useState<string>('');
 
 const setParityBytes = (): string[] | null => {
     if(input) {
-        const test = new Hamming(input);
-        test.setParityBytesCount()
-        test.setParityBytes();
-        test.randomDataError();
-        test.setParityBytes(true);
+        // const test = new Hamming(input);
+        // test.setParityBytesCount()
+        // test.setParityBytes();
+        // test.randomDataError();
+        // test.setParityBytes(true);
+        const test = new CRC();
+        console.log(test.encode('111111111', CrcTypesEnum.CRC16));
         const byteArray = chunkBytes(input);
         const parityByteArray = byteArray.map(byteCode => {
             const isParity = byteCode.split('').reduce((prevValue, currentValue) => {
