@@ -1,6 +1,16 @@
 import React, { useState } from 'react';
 import { makeStyles } from '@material-ui/styles';
-import { TextField, Button, Select, MenuItem } from '@material-ui/core';
+import {
+  TextField,
+  Button,
+  Select,
+  MenuItem,
+  RadioGroup,
+  FormControl,
+  FormLabel,
+  FormControlLabel,
+  Radio,
+} from '@material-ui/core';
 import { chunkBytes } from '../utils/utils';
 import Hamming from '../utils/hamming';
 import CRC, { CrcTypesEnum, CRC_TYPES } from '../utils/CRC';
@@ -10,24 +20,30 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     padding: '50px 100px',
+    backgroundColor: 'silver'
   },
   inputBox: {
     display: 'flex',
     justifyContent: 'space-between',
     padding: '20px',
     minHeight: '88px',
-    borderWidth: '2px',
-    borderStyle: 'solid',
-    borderColor: 'black',
+    flexDirection: 'column',
+  },
+  inputRow: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    marginBottom: '20px',
   },
   inputMargin: {
     marginRight: '40px',
-    minWidth: '200px',
-    maxWidth: '200px',
+    minWidth: '300px',
+    maxWidth: '300px',
     alignSelf: 'center',
   },
   inputMarginBottom: {
     marginBottom: '20px',
+    flexDirection: 'row',
   },
   textWordToBinary: {
     flexGrow: 1,
@@ -46,7 +62,6 @@ const useStyles = makeStyles({
     minHeight: '88px',
     borderWidth: '1px',
     borderStyle: 'solid',
-    borderColor: 'black',
   },
   textBinaryBig: {
     maxHeight: '264px',
@@ -63,8 +78,6 @@ const useStyles = makeStyles({
   button: {
     maxHeight: '36px',
     alignSelf: 'center',
-    minWidth: '200px',
-    maxWidth: '200px',
   },
   selectBox: {
     display: 'flex',
@@ -72,7 +85,7 @@ const useStyles = makeStyles({
   },
   textFieldsRow: {
     display: 'flex',
-    flexDirection: 'column',
+    flexDirection: 'row',
   },
   textFieldsBox: {
     display: 'flex',
@@ -86,6 +99,7 @@ const useStyles = makeStyles({
   textColumnCell: {
     display: 'flex',
     flexDirection: 'row',
+    alignSelf: 'center'
   },
   textColumn: {
     display: 'flex',
@@ -119,6 +133,7 @@ const useStyles = makeStyles({
 });
 
 const ParityPage = (): JSX.Element => {
+  let inputRef;
   const classes = useStyles();
 
   const [input, setInput] = useState<string>('');
@@ -147,52 +162,17 @@ const ParityPage = (): JSX.Element => {
 
   const [erroneusBitNoFix, setErroneusBitNoFix] = useState('0');
 
-  const [error1, setError1] = useState(-1);
-  const [error2, setError2] = useState(-1);
-  const [error3, setError3] = useState(-1);
+  const [hammingBytes, setHammingBytes] = useState('');
+
+  const [error1, setError1] = useState(0);
+  const [error2, setError2] = useState(0);
+  const [error3, setError3] = useState(0);
 
   const [enCRCDisabled, setEnCRCDisabled] = useState(true);
   const [enHammingDisabled, setEnHammingDisabled] = useState(true);
   const [negateDisabled, setNegateDisabled] = useState(true);
   const [deHammingDisabled, setDeHammingDisabled] = useState(true);
   const [deCRCDisabled, setDeCRCDisabled] = useState(true);
-
-  const handleSelectChange = (
-    event: React.ChangeEvent<{
-      name?: string | undefined;
-      value: unknown;
-    }>
-  ): void => {
-    setType(event.target.value as CrcTypesEnum);
-  };
-
-  const handleInputChange = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ): void => {
-    setInput(event.target.value);
-    if (event.target.value.length > 0) {
-      setEnCRCDisabled(false);
-    } else {
-      setEnCRCDisabled(true);
-    }
-  };
-
-  const setCRC = (): void => {
-    const crc = new CRC();
-    const bitInput = chunkBytes(input).join('');
-    crc.encode(bitInput, type);
-    setByteCode(bitInput);
-    setCrcCodeEncode(crc.CRCRemainderEncode);
-    setEnHammingDisabled(false);
-  };
-
-  const decodeCRC = (): void => {
-    const crc = new CRC();
-    const hamming = new Hamming(hammingCodeFixed);
-    const outputCRC = hamming.removeHammingBits();
-    setOutput(outputCRC);
-    setCrcValid(crc.decode(outputCRC, type));
-  };
 
   const colorBits = (
     codeHamming: string,
@@ -254,13 +234,52 @@ const ParityPage = (): JSX.Element => {
     return coloredElementsArray.reverse();
   };
 
-  const setHamming = (): void => {
+  const handleSelectChange = (
+    event: React.ChangeEvent<{
+      name?: string | undefined;
+      value: unknown;
+    }>
+  ): void => {
+    setType(event.target.value as CrcTypesEnum);
+  };
+
+  const handleInputChange = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ): void => {
+    setInput(event.target.value);
+    if (event.target.value.length > 0) {
+      setEnCRCDisabled(false);
+    } else {
+      setEnCRCDisabled(true);
+    }
+  };
+
+  const setHamming = (byteCode: string, crcCodeEncode: string): void => {
     const test = new Hamming(`${byteCode}${crcCodeEncode}`);
     test.setParityBytesCount(false);
     test.setParityBytes();
+    setHammingBytes(test.parityBytesArray.reverse().join(''));
     setHammingCode(test.byteCodeReverse);
     setColoredBits(colorBits(test.byteCodeReverse, byteCode, crcCodeEncode));
     setNegateDisabled(false);
+  };
+
+  const setCRC = (): void => {
+    const crc = new CRC();
+    const bitInput = chunkBytes(input).join('');
+    crc.encode(bitInput, type);
+    setByteCode(bitInput);
+    setCrcCodeEncode(crc.CRCRemainderEncode);
+    setEnHammingDisabled(false);
+    setHamming(bitInput, crc.CRCRemainderEncode);
+  };
+
+  const decodeCRC = (): void => {
+    const crc = new CRC();
+    const hamming = new Hamming(hammingCodeFixed);
+    const outputCRC = hamming.removeHammingBits();
+    setOutput(outputCRC);
+    setCrcValid(crc.decode(outputCRC, type));
   };
 
   const decodeHamming = (): void => {
@@ -279,6 +298,12 @@ const ParityPage = (): JSX.Element => {
     setErroneusBit(hamming.parityBytesArray.join(''));
     setHammingCodeFixed(hamming.byteCodeReverse);
     setDeCRCDisabled(false);
+
+    const crc = new CRC();
+    const temp = new Hamming(hamming.byteCodeReverse);
+    const outputCRC = temp.removeHammingBits();
+    setOutput(outputCRC);
+    setCrcValid(crc.decode(outputCRC, type));
   };
 
   const setErrorBits = (): void => {
@@ -299,202 +324,178 @@ const ParityPage = (): JSX.Element => {
 
   const translateString = (inputBinary: string): string => {
     const tempArray: string[] = [];
-    for(let i = 0; i < inputBinary.length; i = i + 7) {
-      tempArray.push(String.fromCharCode(parseInt(inputBinary.substr(i, 7), 2)));
+    for (let i = 0; i < inputBinary.length; i = i + 7) {
+      tempArray.push(
+        String.fromCharCode(parseInt(inputBinary.substr(i, 7), 2))
+      );
     }
     return tempArray.join('');
-  }
+  };
 
   const getVerifyText = (): JSX.Element => {
     if (crcValid) {
-      return <h3 style={{ color: 'green' }}>Checksum valid</h3>;
+      return <h3 style={{ color: 'green' }}>Poprawny</h3>;
     }
-    return <h3 style={{ color: 'red' }}>Checksum invalid</h3>;
+    return <h3 style={{ color: 'red' }}>Niepoprawny</h3>;
   };
 
   return (
     <div className={classes.root}>
-      <h3 className={classes.textHeading}>INPUT</h3>
       <div className={classes.inputBox}>
-        <TextField
-          className={classes.inputMargin}
-          value={input}
-          onChange={handleInputChange}
-          label="Input text"
-          variant="outlined"
-          InputLabelProps={{
-            shrink: true,
-          }}
-        />
-        <div className={classes.textBinary}>{chunkBytes(input).join('')}</div>
-      </div>
-      <h3 className={classes.textHeading}>CRC (ENCODING)</h3>
-      <div className={classes.inputBox}>
-        <div className={`${classes.inputMargin} ${classes.selectBox}`}>
-          <Select
-            value={type}
-            onChange={handleSelectChange}
-            className={classes.inputMarginBottom}
-          >
-            <MenuItem value={CrcTypesEnum.CRC16}>CRC-16</MenuItem>
-            <MenuItem value={CrcTypesEnum.CRC16REV}>CRC-16 Reverse</MenuItem>
-            <MenuItem value={CrcTypesEnum.CRC32}>CRC-32</MenuItem>
-            <MenuItem value={CrcTypesEnum.CRC12}>CRC-12</MenuItem>
-            <MenuItem value={CrcTypesEnum.SDLC}>SDLC</MenuItem>
-          </Select>
-          <Button
-            className={classes.button}
-            variant="contained"
-            onClick={setCRC}
-            disabled={enCRCDisabled}
-          >
-            Encode CRC
+        <div className={classes.inputRow}>
+          Słowo do zakodowania:
+          <TextField
+            className={classes.inputMargin}
+            value={input}
+            onChange={handleInputChange}
+            label="Input text"
+            InputLabelProps={{
+              shrink: true,
+              style: { display: 'none' },
+            }}
+            style={{ marginLeft: '10px' }}
+          />
+          <Button className={classes.button} variant="outlined">
+            Tłumacz
           </Button>
         </div>
+        Kod binarny:
+        <div className={classes.textBinary}>{chunkBytes(input).join('')}</div>
+      </div>
+      <div className={classes.inputBox}>
+        <div className={`${classes.selectBox}`}>
+          <FormControl component="fieldset">
+            <FormLabel component="legend">Typ CRC</FormLabel>
+            <RadioGroup
+              aria-label="Typ"
+              value={type}
+              onChange={handleSelectChange}
+              className={classes.inputMarginBottom}
+            >
+              <FormControlLabel
+                value={CrcTypesEnum.CRC16}
+                control={<Radio />}
+                label="CRC16"
+              />
+              <FormControlLabel
+                value={CrcTypesEnum.CRC16REV}
+                control={<Radio />}
+                label="CRC16 Reverse"
+              />
+              <FormControlLabel
+                value={CrcTypesEnum.CRC12}
+                control={<Radio />}
+                label="CRC12"
+              />
+              <FormControlLabel
+                value={CrcTypesEnum.CRC32}
+                control={<Radio />}
+                label="CRC32"
+              />
+            </RadioGroup>
+          </FormControl>
+          <Button
+            className={`${classes.button} ${classes.inputMarginBottom}`}
+            variant="outlined"
+            onClick={setCRC}
+          >
+            Koduj CRC
+          </Button>
+        </div>
+        Dane:
         <div className={classes.textBinary}>
           <span style={{ textAlign: 'left' }}>{byteCode}</span>
-          <span style={{ color: 'blue', fontWeight: 'bold' }}>
-            {crcCodeEncode}
-          </span>
         </div>
+        Kod CRC:
+        <div className={classes.textBinary}>
+          <span style={{ textAlign: 'left' }}>{crcCodeEncode}</span>
+        </div>
+        Bity kodu Hamminga:
+        <div className={classes.textBinary}>{hammingBytes}</div>
       </div>
-      <h3 className={classes.textHeading}>HAMMING CODE (ENCODING)</h3>
-      <div className={classes.inputBox}>
-        <Button
-          className={`${classes.inputMargin} ${classes.button}`}
-          onClick={setHamming}
-          variant="contained"
-          disabled={enHammingDisabled}
-        >
-          Encode Hamming
-        </Button>
-        <div className={classes.textBinary}>{coloredBits}</div>
-      </div>
-      <h3 className={classes.textHeading}>SET ERRONOUS BITS</h3>
       <div className={classes.inputBox}>
         <div className={`${classes.textFieldsBox} ${classes.inputMargin}`}>
-          <div className={classes.textFieldsRow}>
+          Bity do zanegowania:
+          <div className={`${classes.textFieldsRow} ${classes.inputMarginBottom}`}>
             <TextField
               className={classes.textFieldBit}
               label="Error bit 1"
-              variant="outlined"
               type="number"
               onChange={(event): void =>
                 setError1(parseInt(event.target.value))
               }
               InputLabelProps={{
                 shrink: true,
+                style: {display: 'none'}
               }}
             />
             <TextField
               className={classes.textFieldBit}
               label="Error bit 2"
-              variant="outlined"
               type="number"
               onChange={(event): void =>
                 setError2(parseInt(event.target.value))
               }
               InputLabelProps={{
                 shrink: true,
+                style: {display: 'none'}
               }}
             />
             <TextField
               className={classes.textFieldBit}
               label="Error bit 3"
-              variant="outlined"
               type="number"
               onChange={(event): void =>
                 setError3(parseInt(event.target.value))
               }
               InputLabelProps={{
                 shrink: true,
+                style: {display: 'none'}
               }}
             />
           </div>
           <Button
-            className={classes.button}
+            className={`${classes.button} ${classes.inputMarginBottom}`}
             onClick={setErrorBits}
-            variant="contained"
-            disabled={negateDisabled}
+            variant="outlined"
           >
-            Negate bits
+            Neguj bity
           </Button>
         </div>
-        <div className={`${classes.textBinary} ${classes.textBinaryBig}`}>
-          {errorBitsElements}
+        Kod binarny po negacji:
+        <div className={`${classes.textBinary} ${classes.textBinary}`}>
+          {errorBitsCode.split('').reverse().join('')}
         </div>
       </div>
-      <h3 className={classes.textHeading}>HAMMING CODE (DECODING)</h3>
       <div className={classes.inputBox}>
         <Button
-          className={classes.inputMargin}
+          className={`${classes.button} ${classes.inputMarginBottom}`}
           onClick={decodeHamming}
-          variant="contained"
-          disabled={deHammingDisabled}
+          variant="outlined"
         >
-          Decode Hamming
+          Dekoduj bity Hamminga
         </Button>
-        <div className={classes.textBox}>
-          <div className={classes.textColumn}>
+        Kod binarny po dekodowaniu bitów Hamminga:
+        <div className={`${classes.textBinary} ${classes.textBinary}`}>
+          {hammingCodeFixed.split('').reverse().join('')}
+        </div>
             <div className={classes.textColumnCell}>
-              <span>Encoded Hamming bits before negation: </span>
+              <span>Błędne bity: </span>
               <span className={classes.textBinarySmall}>
-                {erroneusBitNoFix}
+                {error1}, {error2}, {error3}
               </span>
             </div>
             <div className={classes.textColumnCell}>
-              <span>Encoded Hamming bits after negation: </span>
-              <span className={classes.textBinarySmall}>{erroneusBit}</span>
-            </div>
-          </div>
-          <div className={classes.textColumn}>
-            <div className={classes.textColumnCell}>
-              <span>Erroneus bits: </span>
-              <span className={classes.textBinarySmall}>
-                {error1 > 0 ? error1 : ''}, {error2 > 0 ? error2 : ''},{' '}
-                {error3 > 0 ? error3 : ''}
-              </span>
-            </div>
-            <div className={classes.textColumnCell}>
-              <span>Bit negated: </span>
+              <span>Naprawiony bit: </span>
               <span className={classes.textBinarySmall}>
                 {parseInt(erroneusBitNoFix, 2)}
               </span>
             </div>
-          </div>
-        </div>
       </div>
-      <h3 className={classes.textHeading}>CRC VERIFICATION</h3>
       <div className={classes.inputBox}>
         <div className={`${classes.inputMargin} ${classes.selectBox}`}>
-          <Button
-            className={classes.button}
-            onClick={decodeCRC}
-            variant="contained"
-            disabled={deCRCDisabled}
-          >
-            Verify CRC
-          </Button>
+          <h3>Weryfikacja CRC</h3>
           {getVerifyText()}
-        </div>
-        <div className={classes.textBinary}>
-          <span style={{ textAlign: 'left' }}>
-            {output.substr(0, output.length - CRC_TYPES[type].REMAINDER_LENGTH)}
-          </span>
-          <span style={{ color: 'blue', fontWeight: 'bold' }}>
-            {output.substr(
-              output.length - CRC_TYPES[type].REMAINDER_LENGTH,
-              CRC_TYPES[type].REMAINDER_LENGTH
-            )}
-          </span>
-        </div>
-      </div>
-      <h3 className={classes.textHeading}>OUTPUT</h3>
-      <div className={classes.inputBox}>
-        <div className={classes.textBinary}>
-          <span style={{ textAlign: 'left' }}>
-            {translateString(output.substr(0, output.length - CRC_TYPES[type].REMAINDER_LENGTH))}
-          </span>
         </div>
       </div>
     </div>
