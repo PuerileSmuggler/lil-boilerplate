@@ -1,29 +1,26 @@
-import { chunkBytes } from "./utils";
-
 class Hamming {
 
-    private input: string;
-    private bytesArray: string[];
     private byteCode: string;
     private parityBytesCount: number;
-    private byteCodeReverse: string;
+    public byteCodeReverse: string;
     private parityBytesArray: string[] = [];
+    public erroneousBit = 0;
 
     constructor(input: string) {
-        this.input = input;
-        this.bytesArray = chunkBytes(input);
-        this.byteCode = this.bytesArray.join('');
+        this.byteCode = input;
         this.parityBytesCount = 0;
         this.byteCodeReverse = this.byteCode.split('').reverse().join('');
     }
 
-    public setParityBytesCount(): void {
+    public setParityBytesCount(parityCheck: boolean): void {
         const byteCodeReverseArray = this.byteCodeReverse.split('');
         let i = 0;
         let power = 1;
         while(power <= byteCodeReverseArray.length) {
             i++;
-            byteCodeReverseArray.splice(power - 1, 0, '0');
+            if(!parityCheck) {
+                byteCodeReverseArray.splice(power - 1, 0, '0');
+            }
             power = Math.pow(2, i);
         }
         this.byteCodeReverse = byteCodeReverseArray.join('');
@@ -31,7 +28,6 @@ class Hamming {
     }
 
     public setParityBytes(checkParity = false): void {
-
         let paritySum: number;
         this.parityBytesArray = [];
         const byteCodeReverseArray = this.byteCodeReverse.split('');
@@ -51,10 +47,26 @@ class Hamming {
         this.byteCodeReverse = byteCodeReverseArray.join('');
 
         if(checkParity) {
-            console.log(this.byteCode);
-            console.log(this.parityBytesArray.join(''));
-            console.log(parseInt(this.parityBytesArray.reverse().join(''), 2));
+            const erroneusBit = parseInt(this.parityBytesArray.reverse().join(''), 2);
+            if (erroneusBit > 0) {
+                this.erroneousBit = erroneusBit;
+            } else {
+                this.erroneousBit = 0;
+            }
         }
+    }
+
+    public removeHammingBits(): string {
+        const tempArray: string[] = [];
+        let pow = 0;
+        this.byteCode.split('').forEach((elem, index) => {
+            if (index + 1 === Math.pow(2, pow)) {
+                pow++;
+            } else {
+                tempArray.push(elem);
+            }
+        });
+        return tempArray.reverse().join('');
     }
 
     public randomDataError(): void {
