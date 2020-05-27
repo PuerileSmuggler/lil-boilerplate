@@ -12,7 +12,7 @@ export enum CrcTypesEnum {
     SDLC = "sdlc"
 }
 
-const CRC_TYPES = {
+export const CRC_TYPES = {
     "crc-16": {
         POLYNOMIAL: 0x18005,
         REMAINDER_LENGTH: 16

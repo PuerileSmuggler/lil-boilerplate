@@ -1,14 +1,9 @@
 import React, { useState } from 'react';
 import { makeStyles } from '@material-ui/styles';
-import {
-  TextField,
-  Button,
-  Select,
-  MenuItem,
-} from '@material-ui/core';
+import { TextField, Button, Select, MenuItem } from '@material-ui/core';
 import { chunkBytes } from '../utils/utils';
 import Hamming from '../utils/hamming';
-import CRC, { CrcTypesEnum } from '../utils/CRC';
+import CRC, { CrcTypesEnum, CRC_TYPES } from '../utils/CRC';
 
 const useStyles = makeStyles({
   root: {
@@ -128,6 +123,8 @@ const ParityPage = (): JSX.Element => {
 
   const [input, setInput] = useState<string>('');
 
+  const [output, setOutput] = useState('');
+
   const [type, setType] = useState(CrcTypesEnum.CRC16);
 
   const [crcCodeEncode, setCrcCodeEncode] = useState('');
@@ -169,14 +166,16 @@ const ParityPage = (): JSX.Element => {
     setType(event.target.value as CrcTypesEnum);
   };
 
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
+  const handleInputChange = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ): void => {
     setInput(event.target.value);
-    if(event.target.value.length > 0) {
+    if (event.target.value.length > 0) {
       setEnCRCDisabled(false);
     } else {
       setEnCRCDisabled(true);
     }
-  }
+  };
 
   const setCRC = (): void => {
     const crc = new CRC();
@@ -190,7 +189,9 @@ const ParityPage = (): JSX.Element => {
   const decodeCRC = (): void => {
     const crc = new CRC();
     const hamming = new Hamming(hammingCodeFixed);
-    setCrcValid(crc.decode(hamming.removeHammingBits(), type));
+    const outputCRC = hamming.removeHammingBits();
+    setOutput(outputCRC);
+    setCrcValid(crc.decode(outputCRC, type));
   };
 
   const colorBits = (
@@ -296,6 +297,14 @@ const ParityPage = (): JSX.Element => {
     setDeHammingDisabled(false);
   };
 
+  const translateString = (inputBinary: string): string => {
+    const tempArray: string[] = [];
+    for(let i = 0; i < inputBinary.length; i = i + 7) {
+      tempArray.push(String.fromCharCode(parseInt(inputBinary.substr(i, 7), 2)));
+    }
+    return tempArray.join('');
+  }
+
   const getVerifyText = (): JSX.Element => {
     if (crcValid) {
       return <h3 style={{ color: 'green' }}>Checksum valid</h3>;
@@ -344,7 +353,9 @@ const ParityPage = (): JSX.Element => {
         </div>
         <div className={classes.textBinary}>
           <span style={{ textAlign: 'left' }}>{byteCode}</span>
-          <span style={{ color: 'blue' }}>{crcCodeEncode}</span>
+          <span style={{ color: 'blue', fontWeight: 'bold' }}>
+            {crcCodeEncode}
+          </span>
         </div>
       </div>
       <h3 className={classes.textHeading}>HAMMING CODE (ENCODING)</h3>
@@ -453,16 +464,38 @@ const ParityPage = (): JSX.Element => {
           </div>
         </div>
       </div>
-      <div className={classes.boxVerify}>
-        <Button
-          className={classes.button}
-          onClick={decodeCRC}
-          variant="contained"
-          disabled={deCRCDisabled}
-        >
-          Verify CRC
-        </Button>
-        {getVerifyText()}
+      <h3 className={classes.textHeading}>CRC VERIFICATION</h3>
+      <div className={classes.inputBox}>
+        <div className={`${classes.inputMargin} ${classes.selectBox}`}>
+          <Button
+            className={classes.button}
+            onClick={decodeCRC}
+            variant="contained"
+            disabled={deCRCDisabled}
+          >
+            Verify CRC
+          </Button>
+          {getVerifyText()}
+        </div>
+        <div className={classes.textBinary}>
+          <span style={{ textAlign: 'left' }}>
+            {output.substr(0, output.length - CRC_TYPES[type].REMAINDER_LENGTH)}
+          </span>
+          <span style={{ color: 'blue', fontWeight: 'bold' }}>
+            {output.substr(
+              output.length - CRC_TYPES[type].REMAINDER_LENGTH,
+              CRC_TYPES[type].REMAINDER_LENGTH
+            )}
+          </span>
+        </div>
+      </div>
+      <h3 className={classes.textHeading}>OUTPUT</h3>
+      <div className={classes.inputBox}>
+        <div className={classes.textBinary}>
+          <span style={{ textAlign: 'left' }}>
+            {translateString(output.substr(0, output.length - CRC_TYPES[type].REMAINDER_LENGTH))}
+          </span>
+        </div>
       </div>
     </div>
   );
