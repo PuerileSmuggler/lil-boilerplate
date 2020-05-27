@@ -1,9 +1,11 @@
+import { negateStringBit } from "./utils";
+
 class Hamming {
 
     private byteCode: string;
     private parityBytesCount: number;
     public byteCodeReverse: string;
-    private parityBytesArray: string[] = [];
+    public parityBytesArray: string[] = [];
     public erroneousBit = 0;
 
     constructor(input: string) {
@@ -28,10 +30,9 @@ class Hamming {
     }
 
     public setParityBytes(checkParity = false): void {
-        let paritySum: number;
+        let paritySum = 0;
         this.parityBytesArray = [];
-        const byteCodeReverseArray = this.byteCodeReverse.split('');
-    
+        const byteCodeReverseArray = this.byteCodeReverse.split('');  
         for(let i = 0; i < this.parityBytesCount; i++) {
             paritySum = 0;
             byteCodeReverseArray.forEach((bit, index) => {
@@ -45,7 +46,6 @@ class Hamming {
             this.parityBytesArray.push((paritySum % 2).toString());
         }
         this.byteCodeReverse = byteCodeReverseArray.join('');
-
         if(checkParity) {
             const erroneusBit = parseInt(this.parityBytesArray.reverse().join(''), 2);
             if (erroneusBit > 0) {
@@ -76,7 +76,7 @@ class Hamming {
             const rand = Math.floor(Math.random() * this.byteCodeReverse.length);
             if (!Number.isInteger(Math.sqrt(rand))) {
                 console.log(rand);
-                byteCodeReverseArray[rand] = byteCodeReverseArray[rand] === '1' ? '0' : '1';
+                byteCodeReverseArray[rand] = negateStringBit(byteCodeReverseArray[rand])
                 changed = false;
             }
         }
@@ -84,6 +84,15 @@ class Hamming {
         this.byteCodeReverse = byteCodeReverseArray.join('');
         console.log(this.byteCodeReverse, 'After');
 
+    }
+
+    public fixErroneusBit(): void {
+        const tempArray = this.byteCodeReverse.split('');
+        if(this.erroneousBit) {
+            tempArray[this.erroneousBit - 1] = negateStringBit(tempArray[this.erroneousBit - 1]);
+            this.byteCodeReverse = tempArray.join('');
+            this.setParityBytes(true);
+        }
     }
 
     private checkIndexCode(index: number, parityIndex: number): boolean {

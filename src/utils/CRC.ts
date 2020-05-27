@@ -7,7 +7,9 @@ type CrcTypes = {
 export enum CrcTypesEnum {
     CRC16 = "crc-16",
     CRC16REV = "crc-16-reverse",
-    CRC32 = "crc32"
+    CRC32 = "crc-32",
+    CRC12 = "crc-12",
+    SDLC = "sdlc"
 }
 
 const CRC_TYPES = {
@@ -19,10 +21,18 @@ const CRC_TYPES = {
         POLYNOMIAL: 0x14003,
         REMAINDER_LENGTH: 16
     },
-    "crc32": {
+    "crc-32": {
         POLYNOMIAL: 0x104c11db7,
         REMAINDER_LENGTH: 32,
-      }
+      },
+    "crc-12": {
+        POLYNOMIAL: 0x180F,
+        REMAINDER_LENGTH: 12,
+    },
+    "sdlc": {
+        POLYNOMIAL: 0x11021,
+        REMAINDER_LENGTH: 16,
+    }
 }
 
 class CRC {

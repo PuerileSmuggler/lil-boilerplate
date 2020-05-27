@@ -7,3 +7,7 @@ export const chunkBytes = (input: string): string[] => {
         return byteCode;
     })
 };
+
+export const negateStringBit = (bit: string): string => {
+    return bit === '1' ? '0' : '1';
+}
